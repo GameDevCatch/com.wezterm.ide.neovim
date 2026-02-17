@@ -106,8 +106,9 @@ namespace Neovim.Editor
     {
       // on Powershell, replace the ';' with "`;"
       ("wt", "nt {app} {filePath} --listen {serverSocket} ; nt Powershell -File {getProcessPPIDScriptPath}", "{environment}"),
-      ("alacritty", "--title \"nvimunity\" --command {app} {filePath} --listen {serverSocket}", "{environment}")
-    };
+      ("alacritty", "--title \"nvimunity\" start {app} {filePath} --listen {serverSocket}", "{environment}"),
+      ("wezterm","start {app} --listen {serverSocket} {filePath}", "{environment}")
+   };
 #endif
 
     // Neovim installation paths on Linux here - the first valid path is picked otherwise the ENV variable TODO is
@@ -116,7 +117,7 @@ namespace Neovim.Editor
 #if UNITY_EDITOR_LINUX
      {
        "nvim",
-       "/usr/bin/nvim",
+       "/usr/bin/nvim", 
        "/opt/nvim-linux64/bin/nvim",
        "/opt/nvim-linux-x86_64/bin/nvim",
      };
@@ -132,7 +133,7 @@ namespace Neovim.Editor
 
     /// <summary>
     /// Sets the default terminal launch command, terminal launch arguments, open-file request arguments,
-    /// and jump-to-cursor-position request arguments in case any of them is null.
+    /// and jump-to-cursor-position request arguments in case any of them is null."alacritty", "--title \"nvimunity\" --command {app} {filePath} --listen {serverSocket}", "{environment}"),
     /// </summary>
     private static bool SetDefaults()
     {
