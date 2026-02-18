@@ -8,6 +8,8 @@ using UnityEditor;
 using UnityEngine;
 using Unity.CodeEditor;
 using Debug = UnityEngine.Debug;
+using System.Text.RegularExpressions;
+
 #if UNITY_EDITOR_WIN
 using System.IO.Pipes;
 using System.Runtime.InteropServices;
@@ -29,7 +31,7 @@ namespace Neovim.Editor
 #else // UNITY_EDITOR_WIN
     // this will be initialized to some "127.0.0.1:<random-port>" because Unix domain sockets on Windows are a bitch
     static string s_ServerSocket;
-    static readonly string s_GetProcessPPIDPath = Path.GetFullPath("Packages/com.wezterm.ide.neovim/GetProcessPPID.ps1");
+    static readonly string s_GetProcessPPIDPath = Regex.Replace(Path.GetFullPath("Packages/com.wezterm.ide.neovim/GetProcessPPID.ps1"), @"\s+", "");
 #endif
 
     /// <summary>
