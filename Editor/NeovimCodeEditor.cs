@@ -140,6 +140,7 @@ namespace Neovim.Editor
       ("ptyxis", "--title \"nvimunity-{instanceId}\" -- {app} {filePath} --listen {serverSocket} " + s_NvimCmdString),
       ("xterm", "-T \"nvimunity-{instanceId}\" -e {app} {filePath} --listen {serverSocket} " + s_NvimCmdString),
       ("ghostty", "--title=\"nvimunity-{instanceId}\" --command='{app} {filePath} --listen {serverSocket} " + s_NvimCmdString),
+      ("kitty", "--title \"nvimunity-{instanceId}\" -- {app} {filePath} --listen {serverSocket} " + s_NvimCmdString),
     };
 #elif UNITY_EDITOR_OSX
     {
