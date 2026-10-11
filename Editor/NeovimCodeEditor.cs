@@ -18,6 +18,20 @@ namespace Neovim.Editor
   [InitializeOnLoad]
   public class NeovimCodeEditor : IExternalCodeEditor
   {
+
+    [Serializable]
+    private class NiriWindows
+    {
+      public NiriWindow[] windows;
+    }
+
+    [Serializable]
+    private class NiriWindow
+    {
+      public int id;
+      public string title;
+    }
+
     private static bool s_WindowFocusingAvailable = false;
 
     public static NeovimEditorConfig s_Config = new NeovimEditorConfig();
@@ -100,6 +114,7 @@ namespace Neovim.Editor
       GNOME,  // GNOME (e.g., Ubuntu) on Wayland
       KDE,  // KDE on Wayland
       Hyprland,
+      Niri,
       OTHER,
       UNKNOWN,  // can't be determined :/
     }
@@ -409,6 +424,9 @@ namespace Neovim.Editor
       else if (s_LinuxPlatform == LinuxDesktopEnvironment.Hyprland) {
         s_WindowFocusingAvailable = true;
       }
+ else if (s_LinuxPlatform == LinuxDesktopEnvironment.Niri) {
+        s_WindowFocusingAvailable = true;
+      }
 #elif UNITY_EDITOR_WIN
       s_WindowFocusingAvailable = true;
 #endif
@@ -451,6 +469,9 @@ namespace Neovim.Editor
 
         if (de.Equals("hyprland", StringComparison.OrdinalIgnoreCase))
           return LinuxDesktopEnvironment.Hyprland;
+
+ if (de.Equals("niri", StringComparison.OrdinalIgnoreCase))
+          return LinuxDesktopEnvironment.Niri;
       }
 
       return LinuxDesktopEnvironment.OTHER;
@@ -972,6 +993,74 @@ namespace Neovim.Editor
             }
             break;
           }
+        case LinuxDesktopEnvironment.Niri:
+        {
+  using var p = ProcessUtils.HeadlessProcess();
+
+  // Ask Niri for all windows as JSON.
+  p.StartInfo.FileName = "niri";
+  p.StartInfo.Arguments = "msg -j windows";
+   string targetTitle = String.Empty;
+
+
+  try
+  {
+    p.RunWithAssertion(s_Config.ProcessTimeout);
+
+    string windowsJson = p.StandardOutput.ReadToEnd();
+
+    // Find the window ID from the Niri JSON without jq.
+    targetTitle = $"nvimunity-{s_InstanceId}";
+    string windowId = null;
+
+    // Niri's JSON is an array of window objects. Since Unity's
+    // JsonUtility cannot deserialize arbitrary top-level arrays,
+    // wrap the array in an object first.
+    var wrappedJson = $"{{\"windows\":{windowsJson}}}";
+    var windows = JsonUtility.FromJson<NiriWindows>(wrappedJson);
+
+    if (windows?.windows != null)
+    {
+      foreach (var window in windows.windows)
+      {
+        if (window.title == targetTitle)
+        {
+          windowId = window.id.ToString();
+          break;
+        }
+      }
+    }
+    if (string.IsNullOrWhiteSpace(windowId))
+    {
+      Debug.LogWarning(
+        $"[neovim.ide] failed to find Neovim server instance window titled '{targetTitle}'."
+      );
+      break;
+    }
+
+    // Focus the existing Kitty/Nvim window.
+    using var focus = ProcessUtils.HeadlessProcess();
+    focus.StartInfo.FileName = "niri";
+    focus.StartInfo.Arguments =
+      $"msg action focus-window --id {windowId}";
+
+    focus.RunWithAssertion(s_Config.ProcessTimeout);
+  }
+  catch (ExitCodeMismatchException)
+  {
+    Debug.LogWarning(
+      $"[neovim.ide] failed to focus Neovim server instance titled '{targetTitle}'."
+    );
+  }
+  catch (TimeoutException)
+  {
+    Debug.LogWarning(
+      $"[neovim.ide] timed out while focusing Neovim server instance titled '{targetTitle}'."
+    );
+  }
+
+  break;
+        }
         default:
           // do nothing - too complicated to make it work on all desktop environments :/
           break;
